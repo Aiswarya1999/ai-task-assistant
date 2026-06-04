@@ -1,64 +1,61 @@
 import os
-import google.generativeai as genai
+import requests
 
-# Setup Gemini
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-model = genai.GenerativeModel('gemini-1.5-flash')
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-def generate_task_summary(description: str):
-    """Summarizes a note into a short title using Gemini."""
+def generate_task_summary(scrubbed_text: str) -> str:
+    """Generates a concise task title via direct REST API call."""
+    if not GEMINI_API_KEY:
+        return "New AI Task (API Key Missing)"
+        
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+    headers = {"Content-Type": "application/json"}
+    
+    prompt = f"Generate a short, professional task title (maximum 6 words) for the following items. No quotes:\n\n{scrubbed_text}"
+    payload = {"contents": [{"parts": [{"text": prompt}]}]}
+    
     try:
-        prompt = f"Summarize this note into a 3-5 word task title. Return ONLY the title: {description}"
-        response = model.generate_content(prompt)
-        return response.text.strip()
+        res = requests.post(url, headers=headers, json=payload, timeout=10)
+        if res.status_code == 200:
+            return res.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
     except Exception as e:
-        print(f"Gemini Summary Error: {e}")
-        return "New AI Task"
+        print(f"Gemini API Error: {e}")
+    return "New AI Task"
 
 def get_embedding(text: str):
-    print(f"DEBUG: Attempting Gemini embedding for: {text[:30]}...")
-    try:
-        # 2026 Standard: Use 'text-embedding-005' or 'gemini-embedding-001'
-        # These models provide the best 768-dimension vectors
-        result = genai.embed_content(
-            model="models/text-embedding-005",
-            content=text,
-            task_type="retrieval_document"
-        )
-        print("DEBUG: Gemini Embedding successful!")
-        return result['embeddings'][0]['values'] if 'embeddings' in result else result['embedding']
-    except Exception as e:
-        # CHECK YOUR DOCKER TERMINAL FOR THIS PRINT:
-        print(f"DEBUG REAL ERROR: {e}") 
+    """Generates text vector embeddings via direct REST API call."""
+    if not GEMINI_API_KEY:
+        return None
         
-        # Fallback to the classic model if 005 is not yet in your region
-        try:
-            print("DEBUG: Trying fallback to embedding-001...")
-            result = genai.embed_content(
-                model="models/embedding-001",
-                content=text,
-                task_type="retrieval_document"
-            )
-            return result['embedding']
-        except Exception as e2:
-            print(f"DEBUG Critical Failure: {e2}")
-            return None
-
-def get_answer_from_context(question: str, context_chunks: list):
-    """RAG: Answers a question using the retrieved database chunks."""
-    context_text = "\n\n".join([chunk.content for chunk in context_chunks])
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key={GEMINI_API_KEY}"
+    headers = {"Content-Type": "application/json"}
+    payload = {"model": "models/text-embedding-004", "content": {"parts": [{"text": text}]}}
     
-    prompt = f"""
-    You are a secure assistant. Use the provided context to answer the question accurately.
-    If the answer is not in the context, say 'I don't know based on the documents provided.'
-    
-    Context:
-    {context_text}
-    
-    Question: {question}
-    """
     try:
-        response = model.generate_content(prompt)
-        return response.text
+        res = requests.post(url, headers=headers, json=payload, timeout=10)
+        if res.status_code == 200:
+            return res.json()["embedding"]["values"]
     except Exception as e:
-        return f"Error generating answer: {str(e)}"
+        print(f"Embedding API Error: {e}")
+    return None
+
+def get_answer_from_context(question: str, context_chunks) -> str:
+    """Asks Gemini to answer a question using retrieved context via direct REST API call."""
+    if not GEMINI_API_KEY:
+        return "AI Assistant offline."
+        
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+    headers = {"Content-Type": "application/json"}
+    
+    combined_context = "\n---\n".join([chunk.content for chunk in context_chunks])
+    prompt = f"Context:\n{combined_context}\n\nQuestion: {question}\n\nAnswer:"
+    
+    payload = {"contents": [{"parts": [{"text": prompt}]}]}
+    
+    try:
+        res = requests.post(url, headers=headers, json=payload, timeout=10)
+        if res.status_code == 200:
+            return res.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
+    except Exception as e:
+        print(f"QA API Error: {e}")
+    return "Error generating response."

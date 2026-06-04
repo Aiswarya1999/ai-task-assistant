@@ -1,12 +1,16 @@
-# Ignore sensitive environment files
+# Local Environment Configuration (CRITICAL - DO NOT PUSH)
 .env
-.env.local
 
-# Ignore Python caching folders
+# Python compilation artifacts
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 .pytest_cache/
 
-# Ignore OS specific files
-.DS_Store
-Thumbs.db
+# Docker runtime state
+.docker/
+
+# IDE settings
+.vscode/
+.idea/

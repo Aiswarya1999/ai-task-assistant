@@ -15,6 +15,9 @@ services:
   backend:
     build: ./backend
     container_name: task_backend
+    restart: on-failure
+    # 🔥 FIX 1: Explicitly invoke the exact module path pointing to app.main
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     volumes:
       - ./backend:/app
     ports:
@@ -23,5 +26,6 @@ services:
       - ./backend/.env
     depends_on:
       - db
+
 volumes:
   postgres_data:
