@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 
-# 1. Title updated to "Secure AI Assistant" as requested
+# 1. Title updated to "Secure AI Assistant"
 st.set_page_config(page_title="Secure AI Assistant", page_icon="🛡️", layout="wide")
 
 BACKEND_URL = "http://localhost:8000"
@@ -14,12 +14,12 @@ st.markdown("---")
 # -------------------------------------------------------------------
 st.sidebar.header("📋 Task Management")
 
-# Sidebar options: Task Creator vs. Views
+# Sidebar options: Task Creator - Views
 menu = st.sidebar.radio("Navigate", ["Smart Task Creator", "Task Reminders", "Completed Tasks"])
 
-# -------------------------------------------------------------------
+
 # FEATURE 1: SMART TASK CREATOR
-# -------------------------------------------------------------------
+
 if menu == "Smart Task Creator":
     st.subheader("Type your note/reminder:")
     
@@ -29,7 +29,7 @@ if menu == "Smart Task Creator":
         placeholder="Example: Call Alice tomorrow at 10 AM regarding the deployment phase on cell +91 98765 43210."
     )
     
-    # Button changed to "Save Task"
+    
     if st.button("Save Task", use_container_width=True):
         if user_note.strip():
             with st.spinner("Processing local privacy filters..."):
@@ -38,7 +38,7 @@ if menu == "Smart Task Creator":
                     task_res = requests.post(f"{BACKEND_URL}/tasks/auto", json=payload)
                     
                     if task_res.status_code == 200:
-                        # Success indicator changed to "task saved!"
+                        # Success indicator: "task saved!"
                         st.success("🎉 task saved!")
                         task_data = task_res.json()
                         
@@ -57,14 +57,13 @@ if menu == "Smart Task Creator":
         else:
             st.warning("Please input a note first.")
 
-# -------------------------------------------------------------------
 # FEATURE 2: TASK REMINDERS (ACTIVE)
-# -------------------------------------------------------------------
+
 elif menu == "Task Reminders":
     st.header("⏳ Active Task Reminders")
     st.markdown("This section fetches active corporate action items from your encrypted data pipeline.")
     
-    # Placeholder layout showcasing future database bindings
+    # Placeholder: future database bindings
     st.info("Fetching your active, sanitized tasks from PostgreSQL database...")
     
     # Static mockup mimicking real database output items
@@ -72,9 +71,8 @@ elif menu == "Task Reminders":
         st.code("call <PERSON> at <PHONE_NUMBER>")
         st.button("Mark Completed", key="btn_complete_1")
 
-# -------------------------------------------------------------------
 # FEATURE 3: COMPLETED TASKS
-# -------------------------------------------------------------------
+
 elif menu == "Completed Tasks":
     st.header("✅ Completed Task History")
     st.markdown("Review historical items that have been safely processed and cleared.")
